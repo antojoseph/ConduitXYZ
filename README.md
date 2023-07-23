@@ -1,3 +1,8 @@
-# dss-conduits
+# restake-conduits
 
-This code belongs to the MakerDAO community and the Copyright for the code belongs to the Dai Foundation.
+Please run as 
+
+forge test -vvvv --match-path test/arranger-conduit/CroissantProtocol.t.sol  --fork-url RPC_URL
+
+
+install dependencies via forge install
