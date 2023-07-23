@@ -12,7 +12,7 @@ interface StrategyManager{
     function depositIntoStrategy(address strategy,address token,uint256 amount) external view returns (uint256 shares);
 }
 
-interface CoinbaseStakedETH{
+interface rocketPoolETH{
     function approve(address spender_, uint256 amount_)  external returns (bool success_);
     function balanceOf(address account) external returns(uint256 balance);
     function transfer(address dst, uint wad) external returns (bool);
@@ -27,40 +27,48 @@ contract CroissantProtocolTest is Test {
     CroissantProtocol  conduitImplementation;
     MockERC20 asset;
     StrategyManager eigenLayer;
-    CoinbaseStakedETH cbETH;
+    rocketPoolETH rETH;
+    
+    address attacker = address(0x7E3B29f2eaAFA9008a2C60a2e107a0E6487A7628);
+
     function setUp() public virtual {
         conduitImplementation = new CroissantProtocol();
-        asset = new MockERC20("asset", "ASSET", 18);
-        asset.mint(address(conduitImplementation), 100 ether);
-        
+        rETH = rocketPoolETH(0xae78736Cd615f374D3085123A210448E74Fc6393);
+        eigenLayer = StrategyManager(0x858646372CC42E1A627fcE94aa7A7033e7CF075A);
+
 
     }
      function test_conduit() public {
+        asset = new MockERC20("asset", "ASSET", 18);
+        asset.mint(address(conduitImplementation), 100 ether);
        console.log(address(conduitImplementation));
        console.log(asset.balanceOf(address(conduitImplementation)));
        conduitImplementation.deposit('0xilk', address(conduitImplementation), 10 ether);
-
-        // approve LST to EigenLayer Stratergy Manager
-        cbETH = CoinbaseStakedETH(0xBe9895146f7AF43049ca1c1AE358B0541Ea49704);
-        cbETH.approve(0x858646372CC42E1A627fcE94aa7A7033e7CF075A, 10 ether);
-
-        // Become the largest cbETH HODLR
-         vm.startPrank(0xED1F7bb04D2BA2b6EbE087026F03C96Ea2c357A8);
-        cbETH.transfer(address(conduitImplementation), 10 ether);
-        console.log(cbETH.balanceOf(address(conduitImplementation)));
-        vm.stopPrank();
-
-
-
-        
-        // Deposit into the stratergy
-        eigenLayer = StrategyManager(0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45);
-        eigenLayer.depositIntoStrategy(0x54945180dB7943c0ed0FEE7EdaB2Bd24620256bc,0xBe9895146f7AF43049ca1c1AE358B0541Ea49704,0.000001 ether);
-        
-
-
+       
 
     }
+    
 
+    function test_get_LST_restake() public {
+        vm.prank(address(0xBA12222222228d8Ba445958a75a0704d566BF2C8));
+        rETH.transfer(address(conduitImplementation), 100000000000000);
+        vm.prank(address(0xBA12222222228d8Ba445958a75a0704d566BF2C8));
+        rETH.approve(address(this),1000000000000000000000);
+        rETH.transferFrom(0xBA12222222228d8Ba445958a75a0704d566BF2C8,address(this), 100000000000000);
+        rETH.approve(address(0x1BeE69b7dFFfA4E2d53C2a2Df135C388AD25dCD2),1000000000000000000000);
+        rETH.approve(address(0x858646372CC42E1A627fcE94aa7A7033e7CF075A),1000000000000000000000);
+
+         // approve LST to EigenLayer Stratergy Manager
+        console.log("rETH balance:");
+        console.log(rETH.balanceOf(address(conduitImplementation)));
+        //vm.startPrank(address(0x7E3B29f2eaAFA9008a2C60a2e107a0E6487A7628));
+        conduitImplementation.restake();
+        vm.prank(address(0xBA12222222228d8Ba445958a75a0704d566BF2C8));
+        eigenLayer.depositIntoStrategy(0x1BeE69b7dFFfA4E2d53C2a2Df135C388AD25dCD2,0xae78736Cd615f374D3085123A210448E74Fc6393,10);
+    }
+
+    function test_withdraw(bytes32 ilk, address asset, uint256 maxAmount) public {
+        conduitImplementation.withdraw(ilk,  asset,  maxAmount); 
+    }
 
 }
